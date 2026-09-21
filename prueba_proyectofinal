@@ -1,0 +1,804 @@
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.Stack;
+
+/**
+ * PROYECTO: GAMEDEV STUDIO - SISTEMA DE GESTIÓN INTERNA
+ * MATERIA: Estructura de Datos y Algoritmos
+ * CAMPUS: Tecmilenio San Nicolás
+ */
+public class GameDevStudio_prueba {
+
+    // =========================================================================
+    // 1. PALETA DE COLORES Y CONFIGURACIÓN ESTÉTICA (HUD SCI-FI)
+    // =========================================================================
+    public static final Color BG_DARK = new Color(18, 20, 32);
+    public static final Color PANEL_DARK = new Color(26, 30, 48);
+    public static final Color ACCENT_BLUE = new Color(0, 162, 232);
+    public static final Color ACCENT_PURPLE = new Color(138, 43, 226);
+    public static final Color ACCENT_RED = new Color(220, 53, 69);
+    public static final Color ACCENT_GREEN = new Color(40, 167, 69);
+    public static final Color TEXT_LIGHT = new Color(220, 224, 240);
+    public static final Font FONT_TITLE = new Font("Consolas", Font.BOLD, 18);
+    public static final Font FONT_BODY = new Font("Segoe UI", Font.PLAIN, 13);
+
+    public static void main(String[] args) {
+        // Configurar tema de UI predeterminado
+        SwingUtilities.invokeLater(() -> {
+            HUDDialogs.aplicarEstiloOscuroUIManager();
+            new LoginFrame().setVisible(true);
+        });
+    }
+
+    // =========================================================================
+    // 2. MODELOS DE DATOS (POO)
+    // =========================================================================
+    
+    // Modelo para Pila (Bugs)
+    public static class BugItem {
+        private String id;
+        private String modulo;
+        private String severidad;
+        private String descripcion;
+
+        public BugItem(String id, String modulo, String severidad, String descripcion) {
+            this.id = id;
+            this.modulo = modulo;
+            this.severidad = severidad;
+            this.descripcion = descripcion;
+        }
+
+        public String getId() { return id; }
+        public String getModulo() { return modulo; }
+        public String getSeveridad() { return severidad; }
+        public String getDescripcion() { return descripcion; }
+
+        @Override
+        public String toString() {
+            return "[" + id + "] Modulo: " + modulo + " | Severidad: " + severidad + " | " + descripcion;
+        }
+    }
+
+    // Modelo para Cola (Assets Render)
+    public static class RenderAsset {
+        private String id;
+        private String nombreAsset;
+        private int tiempoMinutos;
+        private String formato;
+
+        public RenderAsset(String id, String nombreAsset, int tiempoMinutos, String formato) {
+            this.id = id;
+            this.nombreAsset = nombreAsset;
+            this.tiempoMinutos = tiempoMinutos;
+            this.formato = formato;
+        }
+
+        public String getId() { return id; }
+        public String getNombreAsset() { return nombreAsset; }
+        public int getTiempoMinutos() { return tiempoMinutos; }
+        public String getFormato() { return formato; }
+
+        @Override
+        public String toString() {
+            return "[" + id + "] Asset: " + nombreAsset + " | Tiempo: " + tiempoMinutos + " min | Formato: " + formato;
+        }
+    }
+
+    // Modelo para Lista (Catálogo)
+    public static class ElementoCatalogo {
+        private String id;
+        private String nombre;
+        private String tipo;
+        private int nivel;
+        private boolean activo;
+
+        public ElementoCatalogo(String id, String nombre, String tipo, int nivel, boolean activo) {
+            this.id = id;
+            this.nombre = nombre;
+            this.tipo = tipo;
+            this.nivel = nivel;
+            this.activo = activo;
+        }
+
+        public String getId() { return id; }
+        public String getNombre() { return nombre; }
+        public void setNombre(String nombre) { this.nombre = nombre; }
+        public String getTipo() { return tipo; }
+        public void setTipo(String tipo) { this.tipo = tipo; }
+        public int getNivel() { return nivel; }
+        public void setNivel(int nivel) { this.nivel = nivel; }
+        public boolean isActivo() { return activo; }
+        public void setActivo(boolean activo) { this.activo = activo; }
+
+        @Override
+        public String toString() {
+            return "[" + id + "] " + nombre + " (" + tipo + ") - Nivel: " + nivel + " | Estado: " + (activo ? "Activo" : "Inactivo");
+        }
+    }
+
+    // =========================================================================
+    // 3. CLASE HELPER CENTRALIZADA PARA JOPTIONPANE ESTILIZADO
+    // =========================================================================
+    public static class HUDDialogs {
+
+        public static void aplicarEstiloOscuroUIManager() {
+            UIManager.put("OptionPane.background", PANEL_DARK);
+            UIManager.put("Panel.background", PANEL_DARK);
+            UIManager.put("OptionPane.messageForeground", TEXT_LIGHT);
+            UIManager.put("Button.background", ACCENT_PURPLE);
+            UIManager.put("Button.foreground", Color.WHITE);
+            UIManager.put("Button.font", new Font("Segoe UI", Font.BOLD, 12));
+        }
+
+        // Mensaje de Información Estándar
+        public static void mostrarInfo(Component padre, String mensaje, String titulo) {
+            JOptionPane.showMessageDialog(padre, mensaje, titulo, JOptionPane.INFORMATION_MESSAGE);
+        }
+
+        // Mensaje de Advertencia
+        public static void mostrarAdvertencia(Component padre, String mensaje, String titulo) {
+            JOptionPane.showMessageDialog(padre, mensaje, titulo, JOptionPane.WARNING_MESSAGE);
+        }
+
+        // Mensaje de Error
+        public static void mostrarError(Component padre, String mensaje, String titulo) {
+            JOptionPane.showMessageDialog(padre, mensaje, titulo, JOptionPane.ERROR_MESSAGE);
+        }
+
+        // Diálogo de Confirmación (Sí / No)
+        public static boolean confirmarAccion(Component padre, String mensaje, String titulo) {
+            int respuesta = JOptionPane.showConfirmDialog(
+                    padre, 
+                    mensaje, 
+                    titulo, 
+                    JOptionPane.YES_NO_OPTION, 
+                    JOptionPane.QUESTION_MESSAGE
+            );
+            return respuesta == JOptionPane.YES_OPTION;
+        }
+
+        // Diálogo de Entrada de Texto
+        public static String pedirTexto(Component padre, String mensaje, String titulo, String valorDefecto) {
+            return (String) JOptionPane.showInputDialog(
+                    padre,
+                    mensaje,
+                    titulo,
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    null,
+                    valorDefecto
+            );
+        }
+
+        // Diálogo con Opciones Personalizadas
+        public static int seleccionarOpcion(Component padre, String mensaje, String titulo, String[] opciones) {
+            return JOptionPane.showOptionDialog(
+                    padre,
+                    mensaje,
+                    titulo,
+                    JOptionPane.DEFAULT_OPTION,
+                    JOptionPane.QUESTION_MESSAGE,
+                    null,
+                    opciones,
+                    opciones[0]
+            );
+        }
+    }
+
+    // =========================================================================
+    // 4. COMPONENTE GRÁFICO: LOGO PERSONALIZADO GAMEDEV STUDIO
+    // =========================================================================
+    public static class LogoPanel extends JPanel {
+        private int size;
+
+        public LogoPanel(int size) {
+            this.size = size;
+            setPreferredSize(new Dimension(size, size));
+            setOpaque(false);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            Graphics2D g2d = (Graphics2D) g.create();
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            int width = getWidth();
+            int height = getHeight();
+
+            // Dibujar círculo orbital de fondo
+            g2d.setColor(ACCENT_BLUE);
+            g2d.setStroke(new BasicStroke(3));
+            g2d.drawOval(5, height / 4, width - 10, height / 2);
+
+            // Dibujar 'G' icónica estilizada
+            GradientPaint gradiente = new GradientPaint(0, 0, ACCENT_BLUE, width, height, ACCENT_PURPLE);
+            g2d.setPaint(gradiente);
+            g2d.setStroke(new BasicStroke(8, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g2d.drawArc(10, 10, width - 20, height - 20, 45, 270);
+            g2d.drawLine(width / 2, height / 2, width - 15, height / 2);
+
+            // Dibujar Gamepad pequeño al centro
+            g2d.setColor(TEXT_LIGHT);
+            g2d.fillRect(width / 2 - 10, height / 2 - 5, 20, 10);
+
+            g2d.dispose();
+        }
+    }
+
+// =========================================================================
+    // 5. VENTANA DE LOGIN (AUTENTICACIÓN CON JOPTIONPANE)
+    // =========================================================================
+    public static class LoginFrame extends JFrame {
+        private JTextField txtUsuario;
+        private JPasswordField txtPassword;
+
+        public LoginFrame() {
+            setTitle("GameDev Studio - Login de Acceso");
+            setSize(420, 420);
+            setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            setLocationRelativeTo(null);
+            setResizable(false);
+
+            JPanel rootPanel = new JPanel(null);
+            rootPanel.setBackground(BG_DARK);
+
+            // Logo Header
+            LogoPanel logo = new LogoPanel(80);
+            logo.setBounds(170, 20, 80, 80);
+            rootPanel.add(logo);
+
+            JLabel lblTitle = new JLabel("GAMEDEV STUDIO", SwingConstants.CENTER);
+            lblTitle.setBounds(50, 110, 320, 25);
+            lblTitle.setForeground(ACCENT_BLUE);
+            lblTitle.setFont(FONT_TITLE);
+            rootPanel.add(lblTitle);
+
+            JLabel lblSubtitle = new JLabel("Sistema de Control de Estructuras", SwingConstants.CENTER);
+            lblSubtitle.setBounds(50, 135, 320, 20);
+            lblSubtitle.setForeground(TEXT_LIGHT);
+            rootPanel.add(lblSubtitle);
+
+            // Formulario
+            JLabel lblUser = new JLabel("Usuario:");
+            lblUser.setBounds(60, 175, 100, 20);
+            lblUser.setForeground(TEXT_LIGHT);
+            rootPanel.add(lblUser);
+
+            txtUsuario = new JTextField("Equipo6");
+            txtUsuario.setBounds(60, 195, 300, 30);
+            txtUsuario.setBackground(PANEL_DARK);
+            txtUsuario.setForeground(TEXT_LIGHT);
+            txtUsuario.setCaretColor(TEXT_LIGHT);
+            rootPanel.add(txtUsuario);
+
+            JLabel lblPass = new JLabel("Contraseña:");
+            lblPass.setBounds(60, 235, 100, 20);
+            lblPass.setForeground(TEXT_LIGHT);
+            rootPanel.add(lblPass);
+
+            txtPassword = new JPasswordField("1234");
+            txtPassword.setBounds(60, 255, 300, 30);
+            txtPassword.setBackground(PANEL_DARK);
+            txtPassword.setForeground(TEXT_LIGHT);
+            txtPassword.setCaretColor(TEXT_LIGHT);
+            rootPanel.add(txtPassword);
+
+            // Botones con JOptionPane integrados
+            JButton btnIngresar = new JButton("INICIAR SESIÓN");
+            btnIngresar.setBounds(60, 310, 140, 35);
+            btnIngresar.setBackground(ACCENT_PURPLE);
+            btnIngresar.setForeground(Color.WHITE);
+            btnIngresar.addActionListener(e -> validarAcceso());
+            rootPanel.add(btnIngresar);
+
+            JButton btnSalir = new JButton("SALIR");
+            btnSalir.setBounds(220, 310, 140, 35);
+            btnSalir.setBackground(PANEL_DARK);
+            btnSalir.setForeground(TEXT_LIGHT);
+            btnSalir.addActionListener(e -> {
+                if (HUDDialogs.confirmarAccion(this, "¿Seguro que desea cerrar la aplicación?", "Confirmar Salida")) {
+                    System.exit(0);
+                }
+            });
+            rootPanel.add(btnSalir);
+
+            add(rootPanel);
+        }
+
+        private void validarAcceso() {
+            String user = txtUsuario.getText().trim();
+            String pass = new String(txtPassword.getPassword()).trim();
+
+            if (user.isEmpty() || pass.isEmpty()) {
+                HUDDialogs.mostrarAdvertencia(this, "Por favor complete todos los campos de credenciales.", "Campos Vacíos");
+                return;
+            }
+
+            if (user.equalsIgnoreCase("Equipo6") && pass.equals("1234")) {
+                HUDDialogs.mostrarInfo(this, "¡Bienvenido al sistema de GameDev Studio, " + user + "!", "Acceso Concedido");
+                dispose();
+                new MainDashboard().setVisible(true);
+            } else {
+                HUDDialogs.mostrarError(this, "Usuario o contraseña incorrectos. Intente de nuevo.", "Error de Autenticación");
+            }
+        }
+    }
+
+    // =========================================================================
+    // 6. MAIN DASHBOARD (SISTEMA PRINCIPAL CON PESTAÑAS)
+    // =========================================================================
+    public static class MainDashboard extends JFrame {
+
+        // Estructuras de Datos
+        private Stack<BugItem> pilaBugs = new Stack<>();
+        private Queue<RenderAsset> colaRender = new LinkedList<>();
+        private ArrayList<ElementoCatalogo> listaCatalogo = new ArrayList<>();
+
+        // Componentes de la Interfaz
+        private DefaultListModel<String> modelBugsList = new DefaultListModel<>();
+        private DefaultListModel<String> modelRenderList = new DefaultListModel<>();
+        private DefaultTableModel modelTableCatalogo;
+
+        private int contadorBugs = 1;
+        private int contadorAssets = 1;
+        private int contadorCatalogo = 1;
+
+        public MainDashboard() {
+            setTitle("GameDev Studio - Dashboard de Control de Proyecto");
+            setSize(900, 650);
+            setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+            setLocationRelativeTo(null);
+
+            // Manejador de cierre con JOptionPane
+            addWindowListener(new WindowAdapter() {
+                @Override
+                public void windowClosing(WindowEvent e) {
+                    confirmarSalida();
+                }
+            });
+
+            // Panel Superior Header
+            JPanel headerPanel = new JPanel(new BorderLayout());
+            headerPanel.setBackground(PANEL_DARK);
+            headerPanel.setBorder(new EmptyBorder(10, 20, 10, 20));
+
+            JPanel leftHeader = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
+            leftHeader.setOpaque(false);
+            leftHeader.add(new LogoPanel(40));
+
+            JLabel lblHeaderTitle = new JLabel("GAMEDEV STUDIO // GESTOR DE ESTRUCTURAS DE DATOS");
+            lblHeaderTitle.setForeground(ACCENT_BLUE);
+            lblHeaderTitle.setFont(FONT_TITLE);
+            leftHeader.add(lblHeaderTitle);
+
+            JButton btnCerrarSesion = new JButton("Cerrar Sesión");
+            btnCerrarSesion.setBackground(ACCENT_RED);
+            btnCerrarSesion.setForeground(Color.WHITE);
+            btnCerrarSesion.addActionListener(e -> {
+                if (HUDDialogs.confirmarAccion(this, "¿Desea cerrar sesión y volver al Login?", "Cerrar Sesión")) {
+                    dispose();
+                    new LoginFrame().setVisible(true);
+                }
+            });
+
+            headerPanel.add(leftHeader, BorderLayout.WEST);
+            headerPanel.add(btnCerrarSesion, BorderLayout.EAST);
+
+            // TabbedPane Principal
+            JTabbedPane tabbedPane = new JTabbedPane();
+            tabbedPane.setBackground(BG_DARK);
+            tabbedPane.setForeground(TEXT_LIGHT);
+
+            tabbedPane.addTab("Bugs Críticos (Pila - LIFO)", crearPanelBugs());
+            tabbedPane.addTab("Renderizado (Cola - FIFO)", crearPanelRender());
+            tabbedPane.addTab("Catálogo de Juego (Lista / CRUD)", crearPanelCatalogo());
+
+            // Barra de Estado Inferior
+            JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+            statusPanel.setBackground(PANEL_DARK);
+            JLabel lblStatus = new JLabel("Estado: Sistema listo. Conectado como Equipo 6.");
+            lblStatus.setForeground(TEXT_LIGHT);
+            statusPanel.add(lblStatus);
+
+            setLayout(new BorderLayout());
+            add(headerPanel, BorderLayout.NORTH);
+            add(tabbedPane, BorderLayout.CENTER);
+            add(statusPanel, BorderLayout.SOUTH);
+
+            // Cargar datos de prueba
+            inicializarDatosDemo();
+        }
+
+        private void confirmarSalida() {
+            if (HUDDialogs.confirmarAccion(this, "¿Está seguro de que desea salir del sistema GameDev Studio?", "Salir")) {
+                System.exit(0);
+            }
+        }
+
+        private void inicializarDatosDemo() {
+            // Datos demo para Pila
+            pilaBugs.push(new BugItem("BUG-01", "Render", "Alta", "Fuga de memoria en texturas 4K"));
+            modelBugsList.addElement(pilaBugs.peek().toString());
+
+            // Datos demo para Cola
+            RenderAsset a1 = new RenderAsset("RND-01", "Fondo_Bosque_L1", 15, "EXR");
+            colaRender.add(a1);
+            modelRenderList.addElement(a1.toString());
+
+            // Datos demo para Lista
+            ElementoCatalogo c1 = new ElementoCatalogo("CAT-01", "Guerrero_01", "Personaje", 95, true);
+            listaCatalogo.add(c1);
+            modelTableCatalogo.addRow(new Object[]{c1.getId(), c1.getNombre(), c1.getTipo(), c1.getNivel(), c1.isActivo() ? "Sí" : "No"});
+        }
+
+        // =========================================================================
+        // 7. PESTAÑA 1: PILA (BUGS CRÍTICOS)
+        // =========================================================================
+        private JPanel crearPanelBugs() {
+            JPanel panel = new JPanel(null);
+            panel.setBackground(BG_DARK);
+
+            JLabel lblTitle = new JLabel("Administración de Bugs Críticos (Estructura LIFO)");
+            lblTitle.setBounds(20, 15, 450, 25);
+            lblTitle.setForeground(ACCENT_BLUE);
+            lblTitle.setFont(FONT_TITLE);
+            panel.add(lblTitle);
+
+            // Campos de Formulario
+            JLabel lblMod = new JLabel("Módulo:");
+            lblMod.setBounds(20, 50, 80, 20);
+            lblMod.setForeground(TEXT_LIGHT);
+            panel.add(lblMod);
+
+            JTextField txtModulo = new JTextField();
+            txtModulo.setBounds(20, 70, 150, 25);
+            txtModulo.setBackground(PANEL_DARK);
+            txtModulo.setForeground(TEXT_LIGHT);
+            panel.add(txtModulo);
+
+            JLabel lblSev = new JLabel("Severidad:");
+            lblSev.setBounds(180, 50, 80, 20);
+            lblSev.setForeground(TEXT_LIGHT);
+            panel.add(lblSev);
+
+            JComboBox<String> cbSeveridad = new JComboBox<>(new String[]{"Baja", "Media", "Alta", "Crítica"});
+            cbSeveridad.setBounds(180, 70, 120, 25);
+            panel.add(cbSeveridad);
+
+            JLabel lblDesc = new JLabel("Descripción:");
+            lblDesc.setBounds(310, 50, 100, 20);
+            lblDesc.setForeground(TEXT_LIGHT);
+            panel.add(lblDesc);
+
+            JTextField txtDesc = new JTextField();
+            txtDesc.setBounds(310, 70, 250, 25);
+            txtDesc.setBackground(PANEL_DARK);
+            txtDesc.setForeground(TEXT_LIGHT);
+            panel.add(txtDesc);
+
+            // Lista Visual de Pila
+            JList<String> listBugs = new JList<>(modelBugsList);
+            listBugs.setBackground(PANEL_DARK);
+            listBugs.setForeground(TEXT_LIGHT);
+            JScrollPane scroll = new JScrollPane(listBugs);
+            scroll.setBounds(20, 110, 540, 320);
+            panel.add(scroll);
+
+            // Botones de Acción (PUSH, POP, PEEK)
+            JButton btnPush = new JButton("Registrar Bug (PUSH)");
+            btnPush.setBounds(580, 110, 260, 35);
+            btnPush.setBackground(ACCENT_BLUE);
+            btnPush.setForeground(Color.WHITE);
+            btnPush.addActionListener(e -> {
+                String mod = txtModulo.getText().trim();
+                String desc = txtDesc.getText().trim();
+                String sev = (String) cbSeveridad.getSelectedItem();
+
+                if (mod.isEmpty() || desc.isEmpty()) {
+                    HUDDialogs.mostrarAdvertencia(this, "Complete el módulo y la descripción del error.", "Atención");
+                    return;
+                }
+
+                contadorBugs++;
+                BugItem nuevoBug = new BugItem("BUG-0" + contadorBugs, mod, sev, desc);
+                pilaBugs.push(nuevoBug);
+                modelBugsList.add(0, nuevoBug.toString()); // Visualmente arriba (LIFO)
+
+                txtModulo.setText("");
+                txtDesc.setText("");
+                HUDDialogs.mostrarInfo(this, "Bug registrado exitosamente en la cima de la Pila.", "Éxito (PUSH)");
+            });
+            panel.add(btnPush);
+
+            JButton btnPop = new JButton("Resolver Reciente (POP)");
+            btnPop.setBounds(580, 160, 260, 35);
+            btnPop.setBackground(ACCENT_PURPLE);
+            btnPop.setForeground(Color.WHITE);
+            btnPop.addActionListener(e -> {
+                if (pilaBugs.isEmpty()) {
+                    HUDDialogs.mostrarAdvertencia(this, "No hay bugs pendientes en la Pila.", "Pila Vacía");
+                    return;
+                }
+
+                BugItem tope = pilaBugs.peek();
+                boolean confirmar = HUDDialogs.confirmarAccion(
+                        this, 
+                        "¿Desea marcar como RESUELTO el siguiente bug del tope?\n\n" + tope.toString(), 
+                        "Confirmar Resolver Bug (POP)"
+                );
+
+                if (confirmar) {
+                    pilaBugs.pop();
+                    modelBugsList.remove(0);
+                    HUDDialogs.mostrarInfo(this, "El bug fue retirado exitosamente de la Pila.", "Bug Resuelto");
+                }
+            });
+            panel.add(btnPop);
+
+            JButton btnPeek = new JButton("Ver Tope (PEEK)");
+            btnPeek.setBounds(580, 210, 260, 35);
+            btnPeek.setBackground(PANEL_DARK);
+            btnPeek.setForeground(TEXT_LIGHT);
+            btnPeek.addActionListener(e -> {
+                if (pilaBugs.isEmpty()) {
+                    HUDDialogs.mostrarInfo(this, "La Pila se encuentra actualmente vacía.", "Consulta PEEK");
+                } else {
+                    HUDDialogs.mostrarInfo(this, "Bug actualmente en la CIMA (Tope):\n\n" + pilaBugs.peek().toString(), "Consulta PEEK");
+                }
+            });
+            panel.add(btnPeek);
+
+            return panel;
+        }
+
+        // =========================================================================
+        // 8. PESTAÑA 2: COLA (RENDERIZADO DE ASSETS)
+        // =========================================================================
+        private JPanel crearPanelRender() {
+            JPanel panel = new JPanel(null);
+            panel.setBackground(BG_DARK);
+
+            JLabel lblTitle = new JLabel("Cola de Procesamiento de Assets (Estructura FIFO)");
+            lblTitle.setBounds(20, 15, 450, 25);
+            lblTitle.setForeground(ACCENT_BLUE);
+            lblTitle.setFont(FONT_TITLE);
+            panel.add(lblTitle);
+
+            // Campos Formulario
+            JLabel lblNom = new JLabel("Nombre Asset:");
+            lblNom.setBounds(20, 50, 100, 20);
+            lblNom.setForeground(TEXT_LIGHT);
+            panel.add(lblNom);
+
+            JTextField txtNombre = new JTextField();
+            txtNombre.setBounds(20, 70, 160, 25);
+            txtNombre.setBackground(PANEL_DARK);
+            txtNombre.setForeground(TEXT_LIGHT);
+            panel.add(txtNombre);
+
+            JLabel lblTiem = new JLabel("Tiempo (Min):");
+            lblTiem.setBounds(190, 50, 90, 20);
+            lblTiem.setForeground(TEXT_LIGHT);
+            panel.add(lblTiem);
+
+            JSpinner spTiempo = new JSpinner(new SpinnerNumberModel(10, 1, 180, 5));
+            spTiempo.setBounds(190, 70, 80, 25);
+            panel.add(spTiempo);
+
+            JLabel lblForm = new JLabel("Formato:");
+            lblForm.setBounds(280, 50, 80, 20);
+            lblForm.setForeground(TEXT_LIGHT);
+            panel.add(lblForm);
+
+            JComboBox<String> cbFormato = new JComboBox<>(new String[]{"EXR", "PNG_32", "FBX", "OBJ"});
+            cbFormato.setBounds(280, 70, 100, 25);
+            panel.add(cbFormato);
+
+            // Lista Visual de Cola
+            JList<String> listRender = new JList<>(modelRenderList);
+            listRender.setBackground(PANEL_DARK);
+            listRender.setForeground(TEXT_LIGHT);
+            JScrollPane scroll = new JScrollPane(listRender);
+            scroll.setBounds(20, 110, 540, 320);
+            panel.add(scroll);
+
+            // Botones de Operación (ENQUEUE, DEQUEUE, FRONT)
+            JButton btnEnqueue = new JButton("Añadir a Cola (ENQUEUE)");
+            btnEnqueue.setBounds(580, 110, 260, 35);
+            btnEnqueue.setBackground(ACCENT_BLUE);
+            btnEnqueue.setForeground(Color.WHITE);
+            btnEnqueue.addActionListener(e -> {
+                String nom = txtNombre.getText().trim();
+                int tiempo = (int) spTiempo.getValue();
+                String form = (String) cbFormato.getSelectedItem();
+
+                if (nom.isEmpty()) {
+                    HUDDialogs.mostrarAdvertencia(this, "Ingrese el nombre del asset a renderizar.", "Campo Requerido");
+                    return;
+                }
+
+                contadorAssets++;
+                RenderAsset nuevoAsset = new RenderAsset("RND-0" + contadorAssets, nom, tiempo, form);
+                colaRender.add(nuevoAsset);
+                modelRenderList.addElement(nuevoAsset.toString());
+
+                txtNombre.setText("");
+                HUDDialogs.mostrarInfo(this, "Asset encolado correctamente en el turno #" + colaRender.size(), "Éxito (ENQUEUE)");
+            });
+            panel.add(btnEnqueue);
+
+            JButton btnDequeue = new JButton("Procesar Siguiente (DEQUEUE)");
+            btnDequeue.setBounds(580, 160, 260, 35);
+            btnDequeue.setBackground(ACCENT_PURPLE);
+            btnDequeue.setForeground(Color.WHITE);
+            btnDequeue.addActionListener(e -> {
+                if (colaRender.isEmpty()) {
+                    HUDDialogs.mostrarAdvertencia(this, "La cola de renderizado está vacía.", "Cola Vacía");
+                    return;
+                }
+
+                RenderAsset frente = colaRender.peek();
+                boolean confirmar = HUDDialogs.confirmarAccion(
+                        this,
+                        "¿Iniciar el procesamiento de render para el asset del FRENTE?\n\n" + frente.toString(),
+                        "Confirmar Render (DEQUEUE)"
+                );
+
+                if (confirmar) {
+                    colaRender.poll();
+                    modelRenderList.remove(0);
+                    HUDDialogs.mostrarInfo(this, "Asset procesado y retirado del frente de la cola.", "Render Completado");
+                }
+            });
+            panel.add(btnDequeue);
+
+            JButton btnFront = new JButton("Ver Siguiente (FRONT / PEEK)");
+            btnFront.setBounds(580, 210, 260, 35);
+            btnFront.setBackground(PANEL_DARK);
+            btnFront.setForeground(TEXT_LIGHT);
+            btnFront.addActionListener(e -> {
+                if (colaRender.isEmpty()) {
+                    HUDDialogs.mostrarInfo(this, "No hay tareas en la cola.", "Consulta FRONT");
+                } else {
+                    int tiempoTotal = colaRender.stream().mapToInt(RenderAsset::getTiempoMinutos).sum();
+                    HUDDialogs.mostrarInfo(this, "Siguiente tarea en la cabeza de la COLA:\n\n" + colaRender.peek().toString() + 
+                            "\n\nTiempo estimado total acumulado en cola: " + tiempoTotal + " minutos.", "Consulta FRONT");
+                }
+            });
+            panel.add(btnFront);
+
+            return panel;
+        }
+
+        // =========================================================================
+        // 9. PESTAÑA 3: LISTA (CATÁLOGO GENERAL - CRUD COMPLETO)
+        // =========================================================================
+        private JPanel crearPanelCatalogo() {
+            JPanel panel = new JPanel(null);
+            panel.setBackground(BG_DARK);
+
+            JLabel lblTitle = new JLabel("Catálogo General del Juego (Estructura ArrayList / Tabla CRUD)");
+            lblTitle.setBounds(20, 15, 500, 25);
+            lblTitle.setForeground(ACCENT_BLUE);
+            lblTitle.setFont(FONT_TITLE);
+            panel.add(lblTitle);
+
+            // Tabla de Datos
+            String[] columnas = {"ID", "Nombre Entidad", "Tipo", "Nivel/Potencia", "Activo"};
+            modelTableCatalogo = new DefaultTableModel(columnas, 0) {
+                @Override
+                public boolean isCellEditable(int row, int column) {
+                    return false; // Tabla no editable directamente en celdas
+                }
+            };
+
+            JTable tabla = new JTable(modelTableCatalogo);
+            tabla.setBackground(PANEL_DARK);
+            tabla.setForeground(TEXT_LIGHT);
+            tabla.setGridColor(BG_DARK);
+            JScrollPane scroll = new JScrollPane(tabla);
+            scroll.setBounds(20, 50, 560, 380);
+            panel.add(scroll);
+
+            // Botonera Lateral CRUD con JOptionPane
+            JButton btnAgregar = new JButton("Añadir Entidad (CREATE)");
+            btnAgregar.setBounds(600, 50, 240, 35);
+            btnAgregar.setBackground(ACCENT_BLUE);
+            btnAgregar.setForeground(Color.WHITE);
+            btnAgregar.addActionListener(e -> {
+                String nom = HUDDialogs.pedirTexto(this, "Ingrese el nombre de la nueva entidad:", "Agregar al Catálogo", "Nuevo_Objeto");
+                if (nom != null && !nom.trim().isEmpty()) {
+                    String[] tipos = {"Personaje", "Objeto", "Habilidad", "Escenario"};
+                    int opTipo = HUDDialogs.seleccionarOpcion(this, "Seleccione el tipo de elemento:", "Tipo de Entidad", tipos);
+                    if (opTipo != -1) {
+                        contadorCatalogo++;
+                        ElementoCatalogo elem = new ElementoCatalogo("CAT-0" + contadorCatalogo, nom, tipos[opTipo], 1, true);
+                        listaCatalogo.add(elem);
+                        modelTableCatalogo.addRow(new Object[]{elem.getId(), elem.getNombre(), elem.getTipo(), elem.getNivel(), "Sí"});
+                        HUDDialogs.mostrarInfo(this, "Entidad agregada exitosamente al catálogo.", "Éxito");
+                    }
+                }
+            });
+            panel.add(btnAgregar);
+
+            JButton btnEditar = new JButton("Modificar (UPDATE)");
+            btnEditar.setBounds(600, 100, 240, 35);
+            btnEditar.setBackground(ACCENT_PURPLE);
+            btnEditar.setForeground(Color.WHITE);
+            btnEditar.addActionListener(e -> {
+                int fila = tabla.getSelectedRow();
+                if (fila == -1) {
+                    HUDDialogs.mostrarAdvertencia(this, "Seleccione una fila de la tabla para editar.", "Selección Requerida");
+                    return;
+                }
+
+                ElementoCatalogo elem = listaCatalogo.get(fila);
+                String nuevoNom = HUDDialogs.pedirTexto(this, "Modifique el nombre de la entidad:", "Editar Entidad", elem.getNombre());
+
+                if (nuevoNom != null && !nuevoNom.trim().isEmpty()) {
+                    elem.setNombre(nuevoNom);
+                    modelTableCatalogo.setValueAt(nuevoNom, fila, 1);
+                    HUDDialogs.mostrarInfo(this, "Registro actualizado correctamente.", "Actualización Guardada");
+                }
+            });
+            panel.add(btnEditar);
+
+            JButton btnEliminar = new JButton("Eliminar (DELETE)");
+            btnEliminar.setBounds(600, 150, 240, 35);
+            btnEliminar.setBackground(ACCENT_RED);
+            btnEliminar.setForeground(Color.WHITE);
+            btnEliminar.addActionListener(e -> {
+                int fila = tabla.getSelectedRow();
+                if (fila == -1) {
+                    HUDDialogs.mostrarAdvertencia(this, "Seleccione un elemento de la tabla para eliminar.", "Atención");
+                    return;
+                }
+
+                ElementoCatalogo elem = listaCatalogo.get(fila);
+                boolean conf = HUDDialogs.confirmarAccion(
+                        this,
+                        "¿Está seguro de eliminar de forma permanente la entidad:\n" + elem.getNombre() + " (" + elem.getId() + ")?",
+                        "Confirmar Eliminación"
+                );
+
+                if (conf) {
+                    listaCatalogo.remove(fila);
+                    modelTableCatalogo.removeRow(fila);
+                    HUDDialogs.mostrarInfo(this, "Entidad eliminada de la lista.", "Registro Eliminado");
+                }
+            });
+            panel.add(btnEliminar);
+
+            JButton btnBuscar = new JButton("Buscar Elemento (READ)");
+            btnBuscar.setBounds(600, 200, 240, 35);
+            btnBuscar.setBackground(PANEL_DARK);
+            btnBuscar.setForeground(TEXT_LIGHT);
+            btnBuscar.addActionListener(e -> {
+                String busqueda = HUDDialogs.pedirTexto(this, "Ingrese el nombre o ID a buscar:", "Buscar en Catálogo", "");
+                if (busqueda != null && !busqueda.trim().isEmpty()) {
+                    boolean encontrado = false;
+                    for (ElementoCatalogo item : listaCatalogo) {
+                        if (item.getNombre().equalsIgnoreCase(busqueda) || item.getId().equalsIgnoreCase(busqueda)) {
+                            HUDDialogs.mostrarInfo(this, "¡Elemento Encontrado!\n\n" + item.toString(), "Resultado de Búsqueda");
+                            encontrado = true;
+                            break;
+                        }
+                    }
+                    if (!encontrado) {
+                        HUDDialogs.mostrarAdvertencia(this, "No se encontró ningún elemento con ese nombre o ID.", "Sin Resultados");
+                    }
+                }
+            });
+            panel.add(btnBuscar);
+
+            return panel;
+        }
+    }
+}
