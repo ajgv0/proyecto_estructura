@@ -21,13 +21,11 @@ import java.util.Queue;
 import java.util.Stack;
 import java.util.regex.Pattern;
 
-// =====================================================================
+// ================================
 //  GAMEDEV STUDIO - Equipo 6
-//  Flujo: Login -> Bienvenida/Menu -> Altas / Bajas / Cambios ->
-//         Consultas -> Salida
-// =====================================================================
+// ================================
 
-// ---------- pila: bugs criticos que congelan la version actual ----------
+// ---------- cola: bugs criticos que congelan la version actual ----------
 class BugCritico {
     int idBug;
     String moduloAfectado;
@@ -47,7 +45,7 @@ class BugCritico {
     }
 }
 
-// ---------- cola: tareas de renderizado/arte programadas en el servidor ----------
+// ---------- pila: tareas de renderizado/arte programadas en el servidor ----------
 class TareaRenderizado {
     int idTarea;
     String nombreAsset;
@@ -522,8 +520,8 @@ class LoginFrame extends JFrame {
 public class GameDevStudio extends JFrame {
 
     // las tres estructuras del equipo
-    Stack<BugCritico> pilaBugs = new Stack<BugCritico>();
-    Queue<TareaRenderizado> colaRenderizado = new LinkedList<TareaRenderizado>();
+    Queue<BugCritico> colaBugs = new LinkedList<BugCritico>();
+    Stack<TareaRenderizado> pilaRenderizado = new Stack<TareaRenderizado>();
     ArrayList<EntidadJuego> catalogo = new ArrayList<EntidadJuego>();
 
     // modelos de tabla (se rellenan desde las estructuras en refrescar())
@@ -591,10 +589,10 @@ public class GameDevStudio extends JFrame {
         catalogo.add(new EntidadJuego(contadorEntidad++, "Bola de fuego", "Habilidad", 60, true));
         catalogo.add(new EntidadJuego(contadorEntidad++, "Espada runica", "Objeto", 72, true));
         catalogo.add(new EntidadJuego(contadorEntidad++, "Escudo roto", "Objeto", 15, false));
-        pilaBugs.push(new BugCritico(contadorBug++, "Fisica", "Alta", "Carlos"));
-        pilaBugs.push(new BugCritico(contadorBug++, "Red", "Critica", "Ana"));
-        colaRenderizado.add(new TareaRenderizado(contadorTarea++, "Dragon_Boss", 45, "FBX"));
-        colaRenderizado.add(new TareaRenderizado(contadorTarea++, "Mapa_Bosque", 30, "PNG"));
+        colaBugs.offer(new BugCritico(contadorBug++, "Fisica", "Alta", "Carlos"));
+        colaBugs.offer(new BugCritico(contadorBug++, "Red", "Critica", "Ana"));
+        pilaRenderizado.push(new TareaRenderizado(contadorTarea++, "Dragon_Boss", 45, "FBX"));
+        pilaRenderizado.push(new TareaRenderizado(contadorTarea++, "Mapa_Bosque", 30, "PNG"));
     }
 
     static DefaultTableModel modelo(String... columnas) {
@@ -613,19 +611,19 @@ public class GameDevStudio extends JFrame {
                     e.estadoActivo ? "Activo" : "Inactivo"});
         }
         modeloBugs.setRowCount(0);
-        for (int i = pilaBugs.size() - 1; i >= 0; i--) { // el tope de la pila aparece primero
-            BugCritico b = pilaBugs.get(i);
+        for (BugCritico b : colaBugs) { // el frente de la cola aparece primero
             modeloBugs.addRow(new Object[]{b.idBug, b.moduloAfectado, b.severidad, b.programadorAsignado});
         }
         modeloTareas.setRowCount(0);
-        for (TareaRenderizado t : colaRenderizado) { // el frente de la cola aparece primero
+        for (int i = pilaRenderizado.size() - 1; i >= 0; i--) { // el tope de la pila aparece primero
+            TareaRenderizado t = pilaRenderizado.get(i);
             modeloTareas.addRow(new Object[]{t.idTarea, t.nombreAsset, t.tiempoEstimadoMin, t.formatoOutput});
         }
         lblEntidades.setText(String.valueOf(catalogo.size()));
-        lblBugs.setText(String.valueOf(pilaBugs.size()));
-        lblTareas.setText(String.valueOf(colaRenderizado.size()));
+        lblBugs.setText(String.valueOf(colaBugs.size()));
+        lblTareas.setText(String.valueOf(pilaRenderizado.size()));
         lblResumen.setText("Resumen de la sesion:  " + catalogo.size() + " entidades  |  "
-                + pilaBugs.size() + " bugs pendientes  |  " + colaRenderizado.size() + " tareas en cola");
+                + colaBugs.size() + " bugs pendientes  |  " + pilaRenderizado.size() + " tareas en cola");
     }
 
     void mostrar(String clave) {
@@ -823,13 +821,13 @@ public class GameDevStudio extends JFrame {
         cab.setOpaque(false);
         cab.setBorder(new EmptyBorder(0, 0, 14, 0));
         cab.add(bienvenida);
-        cab.add(Tema.etiqueta("Panel de control del estudio: bugs criticos, cola de renderizado y catalogo del juego."));
+        cab.add(Tema.etiqueta("Panel de control del estudio: bugs criticos, pila de renderizado y catalogo del juego."));
 
         JPanel stats = new JPanel(new GridLayout(1, 3, 16, 0));
         stats.setOpaque(false);
         stats.add(tarjetaStat(lblEntidades, "Entidades en el catalogo", Tema.CATALOGO));
         stats.add(tarjetaStat(lblBugs, "Bugs criticos pendientes", Tema.BUGS));
-        stats.add(tarjetaStat(lblTareas, "Tareas de renderizado en cola", Tema.RENDER));
+        stats.add(tarjetaStat(lblTareas, "Tareas de renderizado en pila", Tema.RENDER));
 
         BotonNeon btnAlta = new BotonNeon("Registrar (Altas)", Tema.CATALOGO);
         BotonNeon btnBaja = new BotonNeon("Eliminar (Bajas)", Tema.BUGS);
@@ -957,7 +955,7 @@ public class GameDevStudio extends JFrame {
             modulo.requestFocus();
         };
 
-        BotonNeon guardar = new BotonNeon("Registrar bug (push)", ac);
+        BotonNeon guardar = new BotonNeon("Registrar bug (enqueue)", ac);
         BotonNeon btnLimpiar = new BotonNeon("Limpiar", Tema.HUD);
         guardar.addActionListener(e -> {
             String m = modulo.getText().trim();
@@ -967,9 +965,9 @@ public class GameDevStudio extends JFrame {
                 return;
             }
             BugCritico bug = new BugCritico(contadorBug++, m, (String) severidad.getSelectedItem(), p);
-            pilaBugs.push(bug);
+            colaBugs.offer(bug);
             refrescar();
-            Tema.ok(estado, "Bug #" + bug.idBug + " registrado en la pila.");
+            Tema.ok(estado, "Bug #" + bug.idBug + " registrado en la cola.");
             limpiar.run();
         });
         btnLimpiar.addActionListener(e -> {
@@ -978,7 +976,7 @@ public class GameDevStudio extends JFrame {
         });
 
         return dividir(columna(f, botonera(guardar, btnLimpiar), estado),
-                Tema.scroll(Tema.tabla(modeloBugs, ac), "Pila de bugs (el tope aparece primero)", ac));
+                Tema.scroll(Tema.tabla(modeloBugs, ac), "Cola de bugs (el frente aparece primero)", ac));
     }
 
     JPanel altaTarea() {
@@ -1000,7 +998,7 @@ public class GameDevStudio extends JFrame {
             asset.requestFocus();
         };
 
-        BotonNeon guardar = new BotonNeon("Agregar a la cola (enqueue)", ac);
+        BotonNeon guardar = new BotonNeon("Agregar a la pila (push)", ac);
         BotonNeon btnLimpiar = new BotonNeon("Limpiar", Tema.HUD);
         guardar.addActionListener(e -> {
             String a = asset.getText().trim();
@@ -1014,9 +1012,9 @@ public class GameDevStudio extends JFrame {
                 return;
             }
             TareaRenderizado tarea = new TareaRenderizado(contadorTarea++, a, t, (String) formato.getSelectedItem());
-            colaRenderizado.add(tarea);
+            pilaRenderizado.push(tarea);
             refrescar();
-            Tema.ok(estado, "Tarea #" + tarea.idTarea + " agregada a la cola.");
+            Tema.ok(estado, "Tarea #" + tarea.idTarea + " agregada a la pila.");
             limpiar.run();
         });
         btnLimpiar.addActionListener(e -> {
@@ -1025,7 +1023,7 @@ public class GameDevStudio extends JFrame {
         });
 
         return dividir(columna(f, botonera(guardar, btnLimpiar), estado),
-                Tema.scroll(Tema.tabla(modeloTareas, ac), "Cola de renderizado (el frente aparece primero)", ac));
+                Tema.scroll(Tema.tabla(modeloTareas, ac), "Pila de renderizado (el tope aparece primero)", ac));
     }
 
     // =================== PANTALLA 3B: BAJAS ===================
@@ -1068,56 +1066,56 @@ public class GameDevStudio extends JFrame {
         Color ac = Tema.BUGS;
         final JTable tabla = Tema.tabla(modeloBugs, ac);
         final JLabel estado = Tema.estado();
-        BotonNeon pop = new BotonNeon("Resolver mas reciente (pop)", ac);
-        BotonNeon peek = new BotonNeon("Ver bug pendiente (peek)", ac);
-        pop.addActionListener(e -> {
-            if (pilaBugs.isEmpty()) {
+        BotonNeon dequeue = new BotonNeon("Resolver mas antiguo (dequeue)", ac);
+        BotonNeon front = new BotonNeon("Ver bug pendiente (front)", ac);
+        dequeue.addActionListener(e -> {
+            if (colaBugs.isEmpty()) {
                 Tema.error(estado, "No hay bugs criticos pendientes.");
                 return;
             }
-            BugCritico b = pilaBugs.pop();
+            BugCritico b = colaBugs.poll();
             refrescar();
             Tema.ok(estado, "Resuelto: bug #" + b.idBug + " (" + b.moduloAfectado + ")");
         });
-        peek.addActionListener(e -> {
-            if (pilaBugs.isEmpty()) {
+        front.addActionListener(e -> {
+            if (colaBugs.isEmpty()) {
                 Tema.error(estado, "No hay bugs criticos en este momento.");
                 return;
             }
             tabla.setRowSelectionInterval(0, 0);
-            Tema.ok(estado, "Bug pendiente: " + pilaBugs.peek());
+            Tema.ok(estado, "Bug pendiente: " + colaBugs.peek());
         });
-        return tablaConAcciones(tabla, "Pila de bugs criticos", ac,
-                "Pila (LIFO): solo se puede resolver el bug mas reciente, el de la primera fila.",
-                estado, pop, peek);
+        return tablaConAcciones(tabla, "Cola de bugs criticos", ac,
+                "Cola (FIFO): solo se puede resolver el bug mas antiguo, el de la primera fila.",
+                estado, dequeue, front);
     }
 
     JPanel bajaTarea() {
         Color ac = Tema.RENDER;
         final JTable tabla = Tema.tabla(modeloTareas, ac);
         final JLabel estado = Tema.estado();
-        BotonNeon dequeue = new BotonNeon("Procesar siguiente (dequeue)", ac);
-        BotonNeon front = new BotonNeon("Ver siguiente (front)", ac);
-        dequeue.addActionListener(e -> {
-            if (colaRenderizado.isEmpty()) {
+        BotonNeon pop = new BotonNeon("Procesar mas reciente (pop)", ac);
+        BotonNeon peek = new BotonNeon("Ver siguiente (peek)", ac);
+        pop.addActionListener(e -> {
+            if (pilaRenderizado.isEmpty()) {
                 Tema.error(estado, "No hay tareas de renderizado pendientes.");
                 return;
             }
-            TareaRenderizado t = colaRenderizado.poll();
+            TareaRenderizado t = pilaRenderizado.pop();
             refrescar();
             Tema.ok(estado, "Procesada: tarea #" + t.idTarea + " (" + t.nombreAsset + ")");
         });
-        front.addActionListener(e -> {
-            if (colaRenderizado.isEmpty()) {
+        peek.addActionListener(e -> {
+            if (pilaRenderizado.isEmpty()) {
                 Tema.error(estado, "No hay tareas de renderizado en este momento.");
                 return;
             }
             tabla.setRowSelectionInterval(0, 0);
-            Tema.ok(estado, "Siguiente en cola: " + colaRenderizado.peek());
+            Tema.ok(estado, "Siguiente en pila: " + pilaRenderizado.peek());
         });
-        return tablaConAcciones(tabla, "Cola de renderizado", ac,
-                "Cola (FIFO): solo se procesa la tarea del frente, la de la primera fila.",
-                estado, dequeue, front);
+        return tablaConAcciones(tabla, "Pila de renderizado", ac,
+                "Pila (LIFO): solo se procesa la tarea mas reciente, la de la primera fila.",
+                estado, pop, peek);
     }
 
     // =================== PANTALLA 3C: CAMBIOS ===================
@@ -1199,13 +1197,13 @@ public class GameDevStudio extends JFrame {
         f.agregar("Severidad:", severidad);
         f.agregar("Programador asignado:", programador);
 
-        // la fila 0 de la tabla es el tope de la pila, o sea el ultimo indice
+        // la fila 0 de la tabla es el frente de la cola, o sea el primer indice
         tabla.getSelectionModel().addListSelectionListener(e -> {
             int fila = tabla.getSelectedRow();
-            if (e.getValueIsAdjusting() || fila < 0 || fila >= pilaBugs.size()) {
+            if (e.getValueIsAdjusting() || fila < 0 || fila >= colaBugs.size()) {
                 return;
             }
-            BugCritico b = pilaBugs.get(pilaBugs.size() - 1 - fila);
+            BugCritico b = new ArrayList<BugCritico>(colaBugs).get(fila);
             modulo.setText(b.moduloAfectado);
             severidad.setSelectedItem(b.severidad);
             programador.setText(b.programadorAsignado);
@@ -1225,7 +1223,7 @@ public class GameDevStudio extends JFrame {
                 Tema.error(estado, "Llena el modulo y el programador.");
                 return;
             }
-            BugCritico b = pilaBugs.get(pilaBugs.size() - 1 - fila);
+            BugCritico b = new ArrayList<BugCritico>(colaBugs).get(fila);
             b.moduloAfectado = m;
             b.severidad = (String) severidad.getSelectedItem();
             b.programadorAsignado = p;
@@ -1235,7 +1233,7 @@ public class GameDevStudio extends JFrame {
         });
 
         return dividir(columna(f, botonera(guardar), estado),
-                Tema.scroll(tabla, "Pila de bugs (selecciona una fila)", ac));
+                Tema.scroll(tabla, "Cola de bugs (selecciona una fila)", ac));
     }
 
     JPanel cambioTarea() {
@@ -1251,12 +1249,13 @@ public class GameDevStudio extends JFrame {
         f.agregar("Tiempo estimado (min):", tiempo);
         f.agregar("Formato de salida:", formato);
 
+        // la fila 0 de la tabla es el tope de la pila, o sea el ultimo indice
         tabla.getSelectionModel().addListSelectionListener(e -> {
             int fila = tabla.getSelectedRow();
-            if (e.getValueIsAdjusting() || fila < 0 || fila >= colaRenderizado.size()) {
+            if (e.getValueIsAdjusting() || fila < 0 || fila >= pilaRenderizado.size()) {
                 return;
             }
-            TareaRenderizado t = new ArrayList<TareaRenderizado>(colaRenderizado).get(fila);
+            TareaRenderizado t = pilaRenderizado.get(pilaRenderizado.size() - 1 - fila);
             asset.setText(t.nombreAsset);
             tiempo.setText(String.valueOf(t.tiempoEstimadoMin));
             formato.setSelectedItem(t.formatoOutput);
@@ -1276,7 +1275,7 @@ public class GameDevStudio extends JFrame {
                 Tema.error(estado, "Revisa el asset y que el tiempo sea un numero mayor a 0.");
                 return;
             }
-            TareaRenderizado tarea = new ArrayList<TareaRenderizado>(colaRenderizado).get(fila);
+            TareaRenderizado tarea = pilaRenderizado.get(pilaRenderizado.size() - 1 - fila);
             tarea.nombreAsset = a;
             tarea.tiempoEstimadoMin = t;
             tarea.formatoOutput = (String) formato.getSelectedItem();
@@ -1286,13 +1285,13 @@ public class GameDevStudio extends JFrame {
         });
 
         return dividir(columna(f, botonera(guardar), estado),
-                Tema.scroll(tabla, "Cola de renderizado (selecciona una fila)", ac));
+                Tema.scroll(tabla, "Pila de renderizado (selecciona una fila)", ac));
     }
 
     // =================== PANTALLA 4: CONSULTAS ===================
 
     JPanel panelConsultas() {
-        final JComboBox<String> modulo = Tema.combo("Catalogo (Lista)", "Bugs criticos (Pila)", "Renderizado (Cola)");
+        final JComboBox<String> modulo = Tema.combo("Catalogo (Lista)", "Bugs criticos (Cola)", "Renderizado (Pila)");
         final JTextField buscar = Tema.campo(18);
         final JLabel conteo = new JLabel(" ");
         conteo.setFont(Tema.FUENTE_TITULO);
